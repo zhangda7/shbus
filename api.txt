@@ -1,0 +1,89 @@
+1.通过线路中文名获取线路ID
+Request： 1106路
+http://180.166.5.82:8000/palmbus_serv/PalmBusJgj/getLineInfoByName.do?linename=1106%E8%B7%AF&my=7F6ED5C3FC8C5ABD278F5A32DD3AC78F&t=2016-06-2621:04
+Response：关键是lineId
+<linedetails><linedetail><end_earlytime>06:45</end_earlytime><end_latetime>18:55</end_latetime><end_stop>秀康路</end_stop><line_id>90019</line_id><line_name>1106路</line_name><start_earlytime>06:20</start_earlytime><start_latetime>18:30</start_latetime><start_stop>康人路环桥路</start_stop></linedetail></linedetails>
+
+2.通过线路ID获取线路的所有站点
+Request：
+http://180.166.5.82:8000/palmbus_serv/PalmBusJgj/getLine.do?lineid=90019&my=7F6ED5C3FC8C5ABD278F5A32DD3AC78F&t=2016-06-2621:04
+
+Response：
+<lineInfoDetails>
+        <lineResults0>
+                <direction>true</direction>
+<stop><zdmc>康人路环桥路</zdmc><id>1720647701</id></stop>
+<stop><zdmc>环桥路康人路</zdmc><id>1703936021</id></stop>
+<stop><zdmc>汤巷新村</zdmc><id>1687093252</id></stop>
+<stop><zdmc>秀沿路跃进路</zdmc><id>1687093249</id></stop>
+<stop><zdmc>秀沿路周园路</zdmc><id>1686896642</id></stop>
+<stop><zdmc>秀沿路恒和中路</zdmc><id>1686831117</id></stop>
+<stop><zdmc>秀沿路康沈路</zdmc><id>1686765569</id></stop>
+<stop><zdmc>康沈路秀沿路</zdmc><id>1686765586</id></stop>
+<stop><zdmc>康沈路秀康路</zdmc><id>1703542784</id></stop>
+<stop><zdmc>秀康路</zdmc><id>1720320021</id></stop>
+        </lineResults0>
+        <lineResults1>
+                <direction>false</direction>
+<stop><zdmc>秀康路</zdmc><id>1720320021</id></stop>
+<stop><zdmc>康沈路秀康路</zdmc><id>1703477250</id></stop>
+<stop><zdmc>康沈路秀沿路</zdmc><id>1686765585</id></stop>
+<stop><zdmc>秀沿路康沈路</zdmc><id>1686765568</id></stop>
+<stop><zdmc>秀沿路恒和中路</zdmc><id>1686831118</id></stop>
+<stop><zdmc>秀沿路周园路</zdmc><id>1686896641</id></stop>
+<stop><zdmc>秀沿路跃进路</zdmc><id>1687093248</id></stop>
+<stop><zdmc>汤巷新村</zdmc><id>1687093251</id></stop>
+<stop><zdmc>环桥路康人路</zdmc><id>1703936022</id></stop>
+<stop><zdmc>康人路环桥路</zdmc><id>1720647701</id></stop>
+        </lineResults1>
+</lineInfoDetails>
+
+3.查看某一条线路的某一个站点的公交车预计达到时间
+http://180.166.5.82:8000/palmbus_serv/PalmBusJgj/carMonitor.do?lineid=10224&stopid=1552875533&direction=0&my=7F6ED5C3FC8C5ABD278F5A32DD3AC78F&t=2016-06-2621:04
+
+Response:
+这种的结果说明没有发车，此时可以调用getdispatchScreen.do查看发车时间
+<result>
+	<cars lineid="10224" />
+</result>
+下面的结果表明有车在跑了
+<result>
+	<cars lineid="10224">
+		<car>
+			<terminal>沪B-19179</terminal>  车牌号
+			<stopdis>4</stopdis>  还有几站可以到
+			<distance>1910</distance>  距离
+			<time>400</time>  估计的时间，秒
+		</car>
+		<car> 可能同时显示几个车
+			<terminal>沪B-18841</terminal>
+			<stopdis>12</stopdis>
+			<distance>7069</distance>
+			<time>1442</time>
+		</car>
+	</cars>
+</result>
+
+4.查看发车时间
+Request：
+http://180.166.5.82:8000/palmbus_serv/PalmBusJgj/getdispatchScreen.do?lineid=10224&stopid=1737031706&direction=0&my=85A13CB69301CB768B0BE2AEA525512B&t=2016-06-2622:06
+Response：
+<result>
+	<cars lineid="10224">
+		<car>
+			<vehicle>沪B-19137</vehicle>
+			<time>22:20:00</time>
+		</car>
+		<car>
+			<vehicle>沪B-17102</vehicle>
+			<time>22:40:00</time>
+		</car>
+	</cars>
+</result>
+
+
+
+
+
+
+
