@@ -10,7 +10,10 @@ import {
   ListView,
   Image,
   TouchableHighlight,
-  View
+  View,
+  ScrollView,
+  TouchableOpacity,
+  ToastAndroid
 } from 'react-native';
 
 var xml2js = require('xml2js');
@@ -19,6 +22,37 @@ var dateFormat = require('dateformat');
 var busInfo = {};
 busInfo['581路'] = {};
 //busInfo['581路'].stop[0] = "";
+
+var IMAGES = [
+  require('./images/1.png'),
+  require('./images/2.png'),
+  require('./images/1.png'),
+  require('./images/2.png'),
+  require('./images/1.png'),
+  require('./images/2.png'),
+  require('./images/1.png'),
+  require('./images/2.png'),
+  require('./images/1.png'),
+  require('./images/2.png')
+];
+
+var busImages = [
+    require('./images/bus_big.png')
+];
+
+// 名字
+var NAMES = [
+  'Girls\' Generation',
+  'Jessica Jung',
+  'Kim Hyo Yeon',
+  'Seo Hyun',
+  'Soo Young',
+  'Sunny',
+  'Taeyeon',
+  'Tiffany',
+  'Yoona',
+  'Yuri'
+];
 
 //return date like 2016-06-2621:04
 function getFormatDate() {
@@ -40,9 +74,60 @@ function urlForQueryLineStation(lineID) {
     "&t=" + getFormatDate();
 }
 var data = new Array();
-data[0] = "11111";
+//data[0] = "11111";
 var dataSource = {};
 //data[1] = "22222";  
+
+// Card视图
+class Card extends Component {
+  showToast(num: i) {
+    ToastAndroid.show(NAMES[num].toString(), ToastAndroid.SHORT);
+  }
+
+  render() {
+    return (
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => this.showToast(this.props.num)}
+      >
+        <View style={styles.blank}/>
+        <Image
+          style={styles.image}
+          resizeMode={'cover'}
+          source={this.props.img}/>
+        <View style={styles.blank}/>
+      </TouchableOpacity>
+    );
+  }
+}
+
+//one bus stop Card视图
+class BusCard extends Component {
+  onClicked(name) {
+    ToastAndroid.show(name, ToastAndroid.SHORT);
+  }
+
+  render() {
+    return (
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => this.onClicked(this.props.i)}
+      >
+        <View style={styles.blank}/>
+        <Text>{this.props.name}</Text>
+        <Image
+          style={styles.image}
+          resizeMode={'cover'}
+          source={this.props.img} />
+        <View style={styles.blank}/>
+      </TouchableOpacity>
+    );
+  }
+}
+
+// 批量创建
+var createCardRow = (name, i) => <BusCard key={i} name={name} num={i} img={busImages[0]}/>;
+
 class shbus extends Component {
     constructor() {
         super();
@@ -59,19 +144,20 @@ class shbus extends Component {
         fetch(url)
         .then((response) => response.text())
         .then((responseText) => {
-            var that = this;
+            var self = this;
             xml2js.parseString(responseText, function(err, result) {
                 console.log(result.lineInfoDetails.lineResults0[0].stop);
                 var stops = result.lineInfoDetails.lineResults0[0].stop;
-                var listVal = "";
+                var listVal = [];
                 for(var i = 0; i < stops.length; i++) {
-                    listVal += stops[i].zdmc + " | ";
+                    //listVal += stops[i].zdmc + " | ";
+                    listVal.push(stops[i].zdmc);
                 }
                 console.log(listVal);
                 data.push(listVal);
                 console.log(data);
-                that.setState ({
-                    dataSource : that.state.dataSource.cloneWithRows(data)
+                self.setState ({
+                    dataSource : self.state.dataSource.cloneWithRows(data)
                 });
                 //this can print all json string
                 console.log(JSON.stringify(result));
@@ -105,18 +191,11 @@ class shbus extends Component {
         var price = rowData;
         console.log("render one row" + rowData);
         return (
-            <TouchableHighlight onPress={() => this.rowPressed(rowData)}
-                underlayColor='#dddddd'>
-                <View>
-                    <View style={styles.rowContainer}>
-                        <View style={styles.textContainer}>
-                            <Text>{price}</Text>
-                        </View>
-                    </View>
-                    <View style={styles.separator}></View>
-                    
-                </View>
-            </TouchableHighlight>
+            <ScrollView
+                style={styles.container} horizontal={true}>
+                {rowData.map(createCardRow)}
+        </ScrollView>
+            
         );
     }
   render() {
@@ -125,6 +204,7 @@ class shbus extends Component {
         <Text style={styles.welcome}>
           My Favorite Bus
         </Text>
+        
         <ListView 
                 dataSource = {this.state.dataSource}
                 renderRow = {this.renderRow.bind(this)} />
@@ -135,10 +215,7 @@ class shbus extends Component {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5FCFF',
+    flex: 1
   },
   welcome: {
     fontSize: 20,
@@ -174,7 +251,26 @@ const styles = StyleSheet.create({
     rowContainer: {
         flexDirection: 'row',
         padding: 10
-    }
+    },
+    button: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexDirection: 'row',
+    margin: 10,
+  },
+
+  image: {
+    flex: 1,
+    height: 30,
+    width:30,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: '#FF1492',
+  },
+
+  blank: {
+    width: 10,
+  }
 });
 
 AppRegistry.registerComponent('shbus', () => shbus);
