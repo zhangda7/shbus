@@ -1,9 +1,13 @@
 import {
-  StyleSheet
+  StyleSheet,
+  Image
 } from 'react-native';
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1
+  },
+  scollContainer: {
     flex: 1
   },
   welcome: {
@@ -38,24 +42,32 @@ const styles = StyleSheet.create({
         color: '#656565'
     },
     rowContainer: {
-        flexDirection: 'row',
+        flexDirection: 'column',
         padding: 10
     },
-    button: {
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexDirection: 'row',
-    margin: 10,
-  },
-
-  image: {
-    flex: 1,
-    height: 30,
-    width:30
-  },
+    buscard: {
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexDirection: 'column',
+        margin: 10,
+        height:170,
+    },
+    busstopText: {
+        width:30,
+        fontSize: 15,
+        textAlign: 'center',
+        margin: 5,
+        textAlignVertical:'top',
+        flex: 8
+    },
+    image: {
+        flex: 1,
+        width:20,
+        height:5,
+    },
 
   blank: {
-    width: 10,
+    width: 2,
   }
 });
 

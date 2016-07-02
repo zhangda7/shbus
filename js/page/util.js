@@ -1,6 +1,7 @@
 
 var dateFormat = require('dateformat');
 
+//return date like 2016-06-2621:04
 export function getFormatDate() {
     var now = new Date();
     return dateFormat(now, "yyyy-MM-ddhh:MM");

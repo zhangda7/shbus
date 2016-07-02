@@ -13,62 +13,56 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
-  ToastAndroid
+  ToastAndroid,
 } from 'react-native';
 
 import {styles} from "./js/style/style";
 import {getFormatDate, urlForQueryLineInfo, urlForQueryLineStation} from "./js/page/util";
 
 var xml2js = require('xml2js');
+//保存常用公交列表
+var favBus = [
+    '1106路',
+    '581路',
+    '龙惠专线'
+];
 
 var busInfo = {};
 busInfo['581路'] = {};
-//busInfo['581路'].stop[0] = "";
 
 var busImages = [
     require('./images/bus_big.png')
 ];
 
-// 名字
-var NAMES = [
-  'Girls\' Generation',
-  'Jessica Jung',
-  'Kim Hyo Yeon',
-  'Seo Hyun',
-  'Soo Young',
-  'Sunny',
-  'Taeyeon',
-  'Tiffany',
-  'Yoona',
-  'Yuri'
-];
-
-//return date like 2016-06-2621:04
-
-var data = new Array();
-//data[0] = "11111";
+var initialData = new Array();
+var emptyRow = {};
+emptyRow.name = "请添加常用公交路线";
+emptyRow.data = null;
+//initialData[0] = emptyRow;
+//data[0] = "请添加常用公交路线";
 var dataSource = {};
 //data[1] = "22222";  
 
 //one bus stop Card视图
 class BusCard extends Component {
   onClicked(name) {
-    ToastAndroid.show(name, ToastAndroid.SHORT);
+    ToastAndroid.show(name[0], ToastAndroid.SHORT);
   }
 
   render() {
     return (
       <TouchableOpacity
-        style={styles.button}
-        onPress={() => this.onClicked(this.props.i)}
+        onPress={() => this.onClicked(this.props.name)}
       >
-        <View style={styles.blank}/>
-        <Text>{this.props.name}</Text>
+        <View style={styles.buscard}>
+        <Text 
+            style={styles.busstopText}>{this.props.name}</Text>
         <Image
           style={styles.image}
-          resizeMode={'cover'}
+          resizeMode={'contain'}
           source={this.props.img} />
         <View style={styles.blank}/>
+        </View>
       </TouchableOpacity>
     );
   }
@@ -86,31 +80,59 @@ class shbus extends Component {
             rowHasChanged: (r1, r2) => r1.guid !== r2.guid
         });
         this.state = {
-            dataSource : dataSource.cloneWithRows(data)
+            listData : initialData,
+            dataSource : dataSource.cloneWithRows(initialData),
+            curIndex:0
         };
     }
-    fetchData(url) {
+    fetchLineInfo(busName, url) {
+        console.log(busName + "fetchLineInfo, url= " + url);
+        fetch(url)
+        .then((response) => response.text())
+        .then((responseText) => {
+            var self = this;
+            console.log(busName + "responseText " + JSON.stringify(responseText));
+            xml2js.parseString(responseText, function(err, result) {
+                console.log(busName + "fetch result " + JSON.stringify(result));
+                console.log(busName + result.lineInfoDetails.lineResults0[0].stop);
+                var stops = result.lineInfoDetails.lineResults0[0].stop;
+                var listVal = [];
+                var oneRowData = {};
+                for(var i = 0; i < stops.length; i++) {
+                    listVal.push(stops[i].zdmc);
+                }
+                console.log(busName + "listVal: " + JSON.stringify(listVal));
+                oneRowData.name = busName;
+                oneRowData.data = listVal;
+                self.state.listData.push(oneRowData);
+                console.log(busName + "Final result: " + JSON.stringify(self.state.listData));
+                self.setState ({
+                    dataSource : self.state.dataSource.cloneWithRows(self.state.listData)
+                });
+                if(self.state.curIndex < favBus.length - 1) {
+                    self.state.curIndex += 1;
+                    var idUrl = urlForQueryLineInfo(favBus[self.state.curIndex]);
+                    self.fetchLineId(favBus[self.state.curIndex], idUrl);
+                }
+                
+            });
+        })
+        .catch((error) => {
+          console.warn(error);
+      }).done();
+    }
+    fetchLineId(busName, url) {
         fetch(url)
         .then((response) => response.text())
         .then((responseText) => {
             var self = this;
             xml2js.parseString(responseText, function(err, result) {
-                console.log(result.lineInfoDetails.lineResults0[0].stop);
-                var stops = result.lineInfoDetails.lineResults0[0].stop;
-                var listVal = [];
-                for(var i = 0; i < stops.length; i++) {
-                    //listVal += stops[i].zdmc + " | ";
-                    listVal.push(stops[i].zdmc);
-                }
-                console.log(listVal);
-                data.push(listVal);
-                console.log(data);
-                self.setState ({
-                    dataSource : self.state.dataSource.cloneWithRows(data)
-                });
-                //this can print all json string
+                console.log(result);
+                var lineId = result.linedetails.linedetail[0].line_id;
+                console.log(lineId);
                 console.log(JSON.stringify(result));
-                //console.log(reuslt.linedetails);
+                var url = urlForQueryLineStation(lineId);
+                self.fetchLineInfo(busName, url);
             });
         })
         .catch((error) => {
@@ -118,9 +140,16 @@ class shbus extends Component {
       }).done();
     }
     componentDidMount() {
-        var url = urlForQueryLineStation("90019");
-        this.fetchData(url);
+        //for(var i = 0; i < favBus.length; i++) {
+            var idUrl = urlForQueryLineInfo(favBus[this.state.curIndex]);
+            this.fetchLineId(favBus[this.state.curIndex], idUrl);
+        //}
     }
+    componentWillUnmount() {
+        // 如果存在this.timer，则使用clearTimeout清空。
+        // 如果你使用多个timer，那么用多个变量，或者用个数组来保存引用，然后逐个clear
+        this.timer && clearTimeout(this.timer);
+    } 
     _handleResponse(response) {
         console.log("Response : " + response);
         /*this.setState({isLoading:false, message:''});
@@ -137,13 +166,20 @@ class shbus extends Component {
         console.log("row is pressed" + propertyGuid);
     }
     renderRow(rowData, sectionID, rowID) {
-        var price = rowData;
+        //var price = rowData;
         console.log("render one row" + rowData);
+        console.log("render one row" + JSON.stringify(rowData));
+        if(rowData.data == null) {
+            rowData.data = new Array();
+        }
         return (
-            <ScrollView
-                style={styles.container} horizontal={true}>
-                {rowData.map(createCardRow)}
-        </ScrollView>
+            <View style={styles.rowContainer}>
+                <Text>{rowData.name}</Text>
+                <ScrollView
+                    style={styles.scollContainer} horizontal={true}>
+                    {rowData.data.map(createCardRow)}
+                </ScrollView>
+            </View>
             
         );
     }
@@ -151,7 +187,7 @@ class shbus extends Component {
     return (
       <View>
         <Text style={styles.welcome}>
-          My Favorite Bus
+          常用公交列表
         </Text>
         
         <ListView 
