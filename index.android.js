@@ -44,61 +44,6 @@ var busImages = [
     //data[0] = "请添加常用公交路线";
     var dataSource = {};
     //data[1] = "22222";  
-
-    //one bus stop Card视图
-    class BusCard extends Component {
-      onClicked(item) {
-        ToastAndroid.show(item.name[0], ToastAndroid.SHORT);
-        var url = urlForQueryArrivalTime(item.lineId, item.stopId, 0);
-        console.log("Monitor url : " + url);
-        this.fetchMonitor(url);
-      }
-      fetchMonitor(url) {
-          fetch(url)
-          .then((response) => response.text())
-          .then((responseText) => {
-              var self = this;
-              console.log(responseText);
-              xml2js.parseString(responseText, function(err, result) {
-                  console.log(result);
-                  var cars = result.result.cars[0];
-                  console.log(cars);
-                  if(("car" in cars)) {
-                      console.log("found");
-                      console.log(cars.car[0]);
-                      var busInfo = {};
-                      busInfo.name = cars.car[0].terminal;
-                      busInfo.stopDistance = cars.car[0].stopdis;
-                      busInfo.distance = cars.car[0].distance;
-                      busInfo.time = cars.car[0].time;
-                  } else {
-                      console.log("no car in here, should call diaptcher info");
-                  }
-              });
-          })
-          .catch((error) => {
-            console.warn(error);
-        }).done();
-      }
-      render() {
-        return (
-          <TouchableOpacity
-            onPress={() => this.onClicked(this.props.item)}
-          >
-            <View style={styles.buscard}>
-            <Text 
-                style={styles.busstopText}>{this.props.item.name}</Text>
-            <Image
-              style={styles.image}
-              resizeMode={'contain'}
-              source={this.props.img} />
-            <View style={styles.blank}/>
-            </View>
-          </TouchableOpacity>
-        );
-      }
-    }
-
     // 批量创建
     //var createCardRow = (item, i) => <BusCard key={i} item={item} num={i} img={busImages[0]}/>;
 
@@ -195,37 +140,18 @@ var busImages = [
           }).done();
         }
         componentDidMount() {
-            //for(var i = 0; i < favBus.length; i++) {
-                var idUrl = urlForQueryLineInfo(favBus[this.state.curIndex]);
-                this.fetchLineId(favBus[this.state.curIndex], idUrl);
-            //}
-        }
-        componentWillUnmount() {
-            // 如果存在this.timer，则使用clearTimeout清空。
-            // 如果你使用多个timer，那么用多个变量，或者用个数组来保存引用，然后逐个clear
-            this.timer && clearTimeout(this.timer);
-        } 
-        _handleResponse(response) {
-            console.log("Response : " + response);
-            /*this.setState({isLoading:false, message:''});
-            if(response.application_response_code.substr(0,1) === '1') {
-                console.log('Properties found ' + response.listings.length);
-                       
-            } else {
-                this.setState({message: 'Location not recognized, please try again'});
-            }*/
+            var idUrl = urlForQueryLineInfo(favBus[this.state.curIndex]);
+            this.fetchLineId(favBus[this.state.curIndex], idUrl);
         }
         rowPressed(propertyGuid) {
-            /*var property = this.props.listings.filter(prop => prop.guid === propertyGuid)[0];
-            this.props.navigator.push({id:'detail', property:property});*/
             console.log("row is pressed" + propertyGuid);
         }
         cardClicked(item) {
             console.log("item : " + JSON.stringify(item));
-          ToastAndroid.show(item.name[0], ToastAndroid.SHORT);
-          var url = urlForQueryArrivalTime(item.lineId, item.stopId, 0);
-          console.log("Monitor url : " + url);
-          this.fetchMonitor(item.lineId, url);
+            ToastAndroid.show(item.name[0], ToastAndroid.SHORT);
+            var url = urlForQueryArrivalTime(item.lineId, item.stopId, 0);
+            console.log("Monitor url : " + url);
+            this.fetchMonitor(item.lineId, url);
         }
         fetchMonitor(lineId, url) {
             fetch(url)
@@ -283,8 +209,6 @@ var busImages = [
             );
         }
         renderRow(rowData, sectionID, rowID) {
-            //var price = rowData;
-            //console.log("render one row" + rowData);
             console.log("render one row" + JSON.stringify(rowData));
             console.log("line status : " + JSON.stringify(this.state.lineStatus));
             console.log("line id : " + rowData.lineId);
