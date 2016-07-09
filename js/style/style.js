@@ -28,6 +28,9 @@ const styles = StyleSheet.create({
     textContainer: {
         flex: 1
     },
+    cardTextHeader:{
+        flex: 8
+    },
     separator: {
         height: 1,
         backgroundColor: '#dddddd'
