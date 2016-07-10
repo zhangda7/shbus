@@ -52,14 +52,11 @@ var busImages = [
             super();
             //super(props);
             //this.props = data;
-            var dataSource = new ListView.DataSource({
-                rowHasChanged: (r1, r2) => r1.guid !== r2.guid
-            });
+            var dataSource = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2}); 
             this.state = {
                 listData : initialData,
-                dataSource : dataSource.cloneWithRows(initialData),
-                curIndex:0,
-                lineStatus : {}
+                dataSource : dataSource.cloneWithRows([]),
+                curIndex:0
             };
         }
         parseLine(busName, lineId, result) {
@@ -80,6 +77,11 @@ var busImages = [
             }
             oneDirection.direction = result.direction;
             oneDirection.stops = listVal;
+            var status = {};
+            status.name = busName;
+            status.curDirection = true;
+            status.curStops = {};
+            oneRowData.status = status;
             oneRowData.lineInfo.push(oneDirection);
             return oneRowData;
         }
@@ -91,24 +93,28 @@ var busImages = [
                 var self = this;
                 xml2js.parseString(responseText, function(err, result) {
                     console.log(busName + "fetch result " + JSON.stringify(result));
-                    self.state.listData.push(self.parseLine(busName, lineId, result.lineInfoDetails));
+                    var dataClone = self.state.listData;
+                    dataClone.push(self.parseLine(busName, lineId, result.lineInfoDetails));
                     
-                    var previousStatus = self.state.lineStatus;
+                    //var previousStatus = self.state.lineStatus;
                     var status = {};
                     status.name = busName;
                     status.curDirection = true;
                     status.curStops = {};
-                    previousStatus[lineId] = status;
+                    //previousStatus[lineId] = status;
                     //self.state.busStatus.push(status);
                     //set bus status
-                    self.setState({
-                        lineStatus : previousStatus
-                    });
-                    console.log(busName + "Final result: " + JSON.stringify(self.state.listData));
+                    //self.setState({
+                    //    lineStatus : previousStatus
+                    //});
+                    console.log(busName + "Final result: " + JSON.stringify(dataClone));
+                    //self.setState ({
+                    //    dataSource : self.state.dataSource.cloneWithRows(self.state.listData)
+                    //});
                     self.setState ({
+                        listData : dataClone,
                         dataSource : self.state.dataSource.cloneWithRows(self.state.listData)
                     });
-                    console.log("Status : " + JSON.stringify(self.state.lineStatus));
                     if(self.state.curIndex < favBus.length - 1) {
                         self.state.curIndex += 1;
                         var idUrl = urlForQueryLineInfo(favBus[self.state.curIndex]);
@@ -140,6 +146,9 @@ var busImages = [
           }).done();
         }
         componentDidMount() {
+            this.setState({
+                dataSource : this.state.dataSource.cloneWithRows(this.state.listData)
+            });
             var idUrl = urlForQueryLineInfo(favBus[this.state.curIndex]);
             this.fetchLineId(favBus[this.state.curIndex], idUrl);
         }
@@ -171,14 +180,25 @@ var busImages = [
                         busInfo.stopDistance = cars.car[0].stopdis;
                         busInfo.distance = cars.car[0].distance;
                         busInfo.time = cars.car[0].time;
-                        var previousStatus = self.state.lineStatus;
-                        previousStatus[lineId].curStops = busInfo.stopDistance;
-                        self.setState({
-                                lineStatus : previousStatus
-                        });
+                        
                     } else {
                         console.log("no car in here, should call diaptcher info");
                     }
+                    
+                    //dataclone[0].name += "-,";
+                    //dataclone[0].status.name += "-,";
+                    //console.log("fetch Monitor : " + JSON.stringify(dataclone));
+                    //var previousStatus = self.state.lineStatus;
+                    //previousStatus[lineId].name = previousStatus[lineId].name + "-,"
+                    //previousStatus[lineId].curStops = busInfo.stopDistance;
+                    self.setState ({
+                        //listData : [],
+                        dataSource : self.state.dataSource.cloneWithRows([])
+                    });
+                    self.setState ({
+                        listData : dataclone,
+                        dataSource : self.state.dataSource.cloneWithRows(self.state.listData)
+                    });
                 });
             })
             .catch((error) => {
@@ -186,7 +206,7 @@ var busImages = [
           }).done();
         }
         renderOneCard(item, i) {
-            var lineStatus = this.state.lineStatus[item.lineId];
+            //var lineStatus = this.state.lineStatus[item.lineId];
             //console.log("render card line status detail : " + JSON.stringify(lineStatus));
             var busImg = <Image />;
             if(i == 1) {
@@ -210,17 +230,18 @@ var busImages = [
         }
         renderRow(rowData, sectionID, rowID) {
             console.log("render one row" + JSON.stringify(rowData));
-            console.log("line status : " + JSON.stringify(this.state.lineStatus));
-            console.log("line id : " + rowData.lineId);
-            var lineStatus = this.state.lineStatus[rowData.lineId];
-            console.log("line status detail : " + JSON.stringify(lineStatus));
+            //console.log("line status : " + JSON.stringify(this.state.lineStatus));
+            console.log("line id : " + rowData.lineId[0]);
+            var curLineStatus = rowData.status;
+            console.log("line status detail : " + JSON.stringify(curLineStatus));
             if(rowData.data == null) {
                 rowData.data = new Array();
             }
+            var curStatus = JSON.stringify(curLineStatus.curStops);
             return (
                 <View style={styles.rowContainer}>
                     <Text>{rowData.name}</Text>
-                    <Text>预计到站时间：3分钟，距离：1561m, 方向：{JSON.stringify(lineStatus.curStops)}</Text>
+                    <Text>预计时间：3分钟，距离：1561m, 当前状态 : {curStatus}}</Text>
                     <ScrollView
                         style={styles.scollContainer} horizontal={true}>
                         {rowData.lineInfo[0].stops.map(this.renderOneCard.bind(this))}
