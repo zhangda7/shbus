@@ -23,14 +23,11 @@ var xml2js = require('xml2js');
 //保存常用公交列表
 var favBus = [
     '1106路',
-    '581路',
+    //'581路',
     '龙惠专线'
 ];
 
 var busStatus = {};
-
-var busInfo = {};
-busInfo['581路'] = {};
 
 var busImages = [
         require('./images/bus_big.png')
@@ -40,28 +37,24 @@ var busImages = [
     var emptyRow = {};
     emptyRow.name = "请添加常用公交路线";
     emptyRow.data = null;
-    //initialData[0] = emptyRow;
-    //data[0] = "请添加常用公交路线";
     var dataSource = {};
-    //data[1] = "22222";  
     // 批量创建
     //var createCardRow = (item, i) => <BusCard key={i} item={item} num={i} img={busImages[0]}/>;
 
     class shbus extends Component {
         constructor() {
             super();
-            //super(props);
-            //this.props = data;
-            var dataSource = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2}); 
-            this.state = {
-                listData : initialData,
-                dataSource : dataSource.cloneWithRows([]),
-                curIndex:0
+            var DS = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2}); 
+            this.state = { 
+                listData: [], 
+                DS: DS.cloneWithRows([]),
+                curIndex : 0 
             };
         }
         parseLine(busName, lineId, result) {
             //解析lineInfo的数据，传过来的应该是result.lineInfoDetails.lineResults0[0]
             var oneRowData = {};
+            oneRowData.id = lineId;
             oneRowData.name = busName;
             oneRowData.lineId = lineId;
             oneRowData.lineInfo = new Array();
@@ -81,6 +74,7 @@ var busImages = [
             status.name = busName;
             status.curDirection = true;
             status.curStops = {};
+            status.arriving = new Array();
             oneRowData.status = status;
             oneRowData.lineInfo.push(oneDirection);
             return oneRowData;
@@ -96,25 +90,18 @@ var busImages = [
                     var dataClone = self.state.listData;
                     dataClone.push(self.parseLine(busName, lineId, result.lineInfoDetails));
                     
-                    //var previousStatus = self.state.lineStatus;
                     var status = {};
                     status.name = busName;
                     status.curDirection = true;
                     status.curStops = {};
-                    //previousStatus[lineId] = status;
-                    //self.state.busStatus.push(status);
-                    //set bus status
-                    //self.setState({
-                    //    lineStatus : previousStatus
-                    //});
                     console.log(busName + "Final result: " + JSON.stringify(dataClone));
-                    //self.setState ({
-                    //    dataSource : self.state.dataSource.cloneWithRows(self.state.listData)
-                    //});
                     self.setState ({
-                        listData : dataClone,
-                        dataSource : self.state.dataSource.cloneWithRows(self.state.listData)
+                        listData : dataClone
                     });
+                    self.setState ({
+                        DS : self.state.DS.cloneWithRows(self.state.listData)
+                    });
+                    self.state.DS._dirtyRows[0][self.state.curIndex - 1] = true;
                     if(self.state.curIndex < favBus.length - 1) {
                         self.state.curIndex += 1;
                         var idUrl = urlForQueryLineInfo(favBus[self.state.curIndex]);
@@ -147,8 +134,8 @@ var busImages = [
         }
         componentDidMount() {
             this.setState({
-                dataSource : this.state.dataSource.cloneWithRows(this.state.listData)
-            });
+            	DS: this.state.DS.cloneWithRows(this.state.listData)
+            })
             var idUrl = urlForQueryLineInfo(favBus[this.state.curIndex]);
             this.fetchLineId(favBus[this.state.curIndex], idUrl);
         }
@@ -162,6 +149,9 @@ var busImages = [
             console.log("Monitor url : " + url);
             this.fetchMonitor(item.lineId, url);
         }
+        toastInfo(msg) {
+            console.log("Toast ", msg);
+        }
         fetchMonitor(lineId, url) {
             fetch(url)
             .then((response) => response.text())
@@ -172,32 +162,35 @@ var busImages = [
                     console.log(result);
                     var cars = result.result.cars[0];
                     console.log(cars);
+                    var dataclone = self.state.listData;
+                    var index = -1;
+                    for(var i = 0; i < dataclone.length; i++) {
+                        if(dataclone[i].lineId == lineId) {
+                            console.log("find id : " + i);
+                            index = i;
+                        }
+                    }
+                    if(index < 0) {
+                        toastInfo("index is -1, can not find apporiate lineId");
+                        return;
+                    }
+                    dataclone[index].status.arriving = [];
+                    var busInfo = {};
                     if(("car" in cars)) {
                         console.log("found");
                         console.log(cars.car[0]);
-                        var busInfo = {};
                         busInfo.name = cars.car[0].terminal;
                         busInfo.stopDistance = cars.car[0].stopdis;
                         busInfo.distance = cars.car[0].distance;
                         busInfo.time = cars.car[0].time;
-                        
+                        busInfo.comment = "预计" + busInfo.time + "到达";
                     } else {
+                        busInfo.comment = "未查到";
                         console.log("no car in here, should call diaptcher info");
                     }
-                    
-                    //dataclone[0].name += "-,";
-                    //dataclone[0].status.name += "-,";
-                    //console.log("fetch Monitor : " + JSON.stringify(dataclone));
-                    //var previousStatus = self.state.lineStatus;
-                    //previousStatus[lineId].name = previousStatus[lineId].name + "-,"
-                    //previousStatus[lineId].curStops = busInfo.stopDistance;
+                    dataclone[index].status.arriving.push(busInfo);
                     self.setState ({
-                        //listData : [],
-                        dataSource : self.state.dataSource.cloneWithRows([])
-                    });
-                    self.setState ({
-                        listData : dataclone,
-                        dataSource : self.state.dataSource.cloneWithRows(self.state.listData)
+                        listData : dataclone
                     });
                 });
             })
@@ -234,14 +227,15 @@ var busImages = [
             console.log("line id : " + rowData.lineId[0]);
             var curLineStatus = rowData.status;
             console.log("line status detail : " + JSON.stringify(curLineStatus));
-            if(rowData.data == null) {
-                rowData.data = new Array();
+            var curStatus = "";
+            if(rowData.status.arriving.length > 0) {
+                curStatus = rowData.status.arriving[0].comment;
             }
-            var curStatus = JSON.stringify(curLineStatus.curStops);
+            console.log("curStatus:", curStatus);
             return (
                 <View style={styles.rowContainer}>
                     <Text>{rowData.name}</Text>
-                    <Text>预计时间：3分钟，距离：1561m, 当前状态 : {curStatus}}</Text>
+                    <Text>预计时间：3分钟，距离：1561m, 当前状态 : {curStatus}</Text>
                     <ScrollView
                         style={styles.scollContainer} horizontal={true}>
                         {rowData.lineInfo[0].stops.map(this.renderOneCard.bind(this))}
@@ -258,7 +252,7 @@ var busImages = [
             </Text>
             
             <ListView 
-                    dataSource = {this.state.dataSource}
+                    dataSource = {this.state.DS}
                     renderRow = {this.renderRow.bind(this)} />
           </View>
         );
