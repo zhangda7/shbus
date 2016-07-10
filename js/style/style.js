@@ -7,6 +7,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1
   },
+  list: 
+  {
+    flex:1,
+    flexDirection: 'column',
+  },
   scollContainer: {
     flex: 1
   },

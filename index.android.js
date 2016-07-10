@@ -23,7 +23,7 @@ var xml2js = require('xml2js');
 //保存常用公交列表
 var favBus = [
     '1106路',
-    //'581路',
+    '581路',
     '龙惠专线'
 ];
 
@@ -246,12 +246,12 @@ var busImages = [
         }
       render() {
         return (
-          <View>
+          <View style={styles.container}>
             <Text style={styles.welcome}>
               常用公交列表
             </Text>
             
-            <ListView 
+            <ListView style={styles.list}
                     dataSource = {this.state.DS}
                     renderRow = {this.renderRow.bind(this)} />
           </View>
